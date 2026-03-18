@@ -59,7 +59,12 @@ def run_scraper(output_csv):
     ]
 
     with open(output_csv, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            delimiter=";",
+            quoting=csv.QUOTE_MINIMAL,
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -144,7 +149,7 @@ def main():
 
     if not args.skip_featurize:
         featurer = load_featurer_module()
-        featurer.extract_features_from_files(args.txt_dir, args.features_output)
+        featurer.extract_features_from_files(args.txt_dir, args.features_output, args.labeled_output)
 
     if not args.skip_validate:
         run_validator(
