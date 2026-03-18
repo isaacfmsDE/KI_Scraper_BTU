@@ -90,24 +90,31 @@ Regeln:
 # ==============================
 def load_csv_semicolon_or_fallback(path: str) -> pd.DataFrame:
     """
-    Lê CSV do scraper (sep=';').
-    Se estiver “colapsado” em 1 coluna (ex.: Excel salvou errado),
-    faz split manual por ';'.
+    Lê CSV do scraper com tolerância a separador incorreto.
+   
+    Ordem de tentativa:
+    1) sep=';' (formato esperado do pipeline)
+    2) sep=',' (compatibilidade com arquivos antigos/gerados fora do scraper principal)
+    3) fallback manual para arquivo colapsado em 1 coluna
     """
-    # tentativa normal (o esperado)
-    df = pd.read_csv(path, encoding="utf-8-sig", sep=";")
-    if df.shape[1] > 1:
-        return df
+    for sep in (";", ","):
+        try:
+            df = pd.read_csv(path, encoding="utf-8-sig", sep=sep)
+            if df.shape[1] > 1:
+                return df
+        except pd.errors.ParserError:
+            continue
 
     # fallback: 1 coluna com tudo concatenado
     df_raw = pd.read_csv(path, encoding="utf-8-sig", header=None)
     col = df_raw.iloc[:, 0].astype(str)
 
     header_str = col.iloc[0]
-    headers = [h.strip() for h in header_str.split(";") if h.strip()]
+    delimiter = ";" if header_str.count(";") >= header_str.count(",") else ","
+    headers = [h.strip() for h in header_str.split(delimiter) if h.strip()]
 
     data_rows = col.iloc[1:]
-    data = data_rows.str.split(";", expand=True)
+    data = data_rows.str.split(delimiter, expand=True)
     data.columns = headers
     return data.reset_index(drop=True)
 

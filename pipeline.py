@@ -59,7 +59,12 @@ def run_scraper(output_csv):
     ]
 
     with open(output_csv, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            delimiter=";",
+            quoting=csv.QUOTE_MINIMAL,
+        )
         writer.writeheader()
         writer.writerows(rows)
 
