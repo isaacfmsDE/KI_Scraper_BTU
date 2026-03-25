@@ -19,6 +19,7 @@ TXT_DIR = 'richtlinien_txt'
 OUTPUT_CSV = 'richtlinien_features.csv'
 DEFAULT_SOURCE_CSV = 'foerderprogramme_Labeled.csv'
 NO_DEADLINE_TEXT = 'keine gennante friste'
+NO_VALUES_TEXT = 'keine gennante Werte'
 OUTPUT_COLUMNS = [
     'source_file',
     'titel_der_foerderung',
@@ -28,9 +29,10 @@ OUTPUT_COLUMNS = [
     'laufzeit_programm_ende',
     'antragsfrist_ende',
     'antragsdynamik',
+    'gennante Werte',
+    'gennante Friste',
     'thematische_schwerpunkte',
     'anforderungen',
-    'gennante Friste',
     'Link zum Förderprogramm',
 ]
 
@@ -47,6 +49,7 @@ Extrahiere ALLE folgenden Informationen in einem STRIKT validen JSON-Format:
   "laufzeit_programm_ende": "",
   "antragsfrist_ende": "",
   "antragsdynamik": "",
+  "gennante_werte": [],
   "thematische_schwerpunkte": "",
   "anforderungen": "",
   "gennante_fristen": []
@@ -104,6 +107,17 @@ WICHTIGE REGELN:
   - Wenn es absolut keine explizit genannten Daten im Text gibt, gib eine leere Liste [] zurück.
   - Erfinde keine Bedeutungen; nutze nur kurze, textnahe Beschreibungen.
 
+- "gennante_werte":
+  - Sammle ALLE explizit im Text genannten EURO-Beträge mit kurzer Bedeutung.
+  - Ausgabe als JSON-Liste von Strings.
+  - Jeder Eintrag muss dem Muster folgen: "<Wert> - <kurze Bedeutung>".
+  - Beispiele:
+    - "5 Mio. Euro - Programmbudget"
+    - "200.000 € - Maximale Förderung pro Projekt"
+  - Wenn mehrere Werte genannt werden, gib alle zurück.
+  - Wenn es keine explizit genannten EURO-Werte gibt, gib eine leere Liste [] zurück.
+  - Erfinde keine Bedeutungen; nutze nur kurze, textnahe Beschreibungen.
+
 - KEIN Fließtext außerhalb des JSON. Antworte NUR mit dem JSON-Objekt.
 """
 
@@ -137,6 +151,15 @@ def ensure_list(x):
 
 
 def normalize_deadline_entries(entries):
+    cleaned = []
+    for entry in ensure_list(entries):
+        line = re.sub(r'\s+', ' ', entry).strip()
+        if line:
+            cleaned.append(line)
+    return cleaned
+
+
+def normalize_value_entries(entries):
     cleaned = []
     for entry in ensure_list(entries):
         line = re.sub(r'\s+', ' ', entry).strip()
@@ -238,6 +261,9 @@ def extract_features_from_text(client, text, filename=''):
     thematische_schwerpunkte = data.get('thematische_schwerpunkte', '') or ''
     anforderungen = data.get('anforderungen', '') or ''
 
+    werte = normalize_value_entries(data.get('gennante_werte'))
+    gennante_werte = '\n'.join(werte) if werte else NO_VALUES_TEXT
+
     fristen = normalize_deadline_entries(data.get('gennante_fristen'))
     gennante_fristen = '\n'.join(fristen) if fristen else NO_DEADLINE_TEXT
 
@@ -250,9 +276,10 @@ def extract_features_from_text(client, text, filename=''):
         'laufzeit_programm_ende': laufzeit_programm_ende,
         'antragsfrist_ende': antragsfrist_ende,
         'antragsdynamik': antragsdynamik,
+        'gennante Werte': gennante_werte,
+        'gennante Friste': gennante_fristen,
         'thematische_schwerpunkte': thematische_schwerpunkte,
         'anforderungen': anforderungen,
-        'gennante Friste': gennante_fristen,
     }
 
 
