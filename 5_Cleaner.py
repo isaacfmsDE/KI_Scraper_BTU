@@ -24,15 +24,12 @@ NUM_FIELDS = ['foerdersumme']
 KEEP_COLUMNS = [
     'source_file',
     'titel_der_foerderung',
-    'foerdersumme',
-    'projekt_max_foerderung',
     'foerdernehmer',
-    'laufzeit_programm_ende',
-    'antragsfrist_ende',
+    'gennante Werte',
+    'gennante Friste',
     'antragsdynamik',
     'thematische_schwerpunkte',
     'anforderungen',
-    'gennante Friste',
     'Link zum Förderprogramm',
 ]
 
@@ -111,6 +108,14 @@ def apply_cleaning(features_df, audit_df, sanity_df):
     for col in KEEP_COLUMNS:
         if col not in df.columns:
             df[col] = ''
+    if 'gennante Werte' in df.columns:
+        df['gennante Werte'] = df['gennante Werte'].apply(
+            lambda v: v if clean_nan_str(v) else 'keine gennante Werte'
+        )
+    if 'gennante Friste' in df.columns:
+        df['gennante Friste'] = df['gennante Friste'].apply(
+            lambda v: v if clean_nan_str(v) else 'keine gennante friste'
+        )
 
     logs = []
 
